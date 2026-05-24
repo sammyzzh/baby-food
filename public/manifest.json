@@ -1,0 +1,14 @@
+{
+  "name": "宝宝辅食管理",
+  "short_name": "辅食管理",
+  "description": "宝宝辅食记录、排敏追踪、菜单生成，全家共用",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF8",
+  "theme_color": "#3B6D11",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
