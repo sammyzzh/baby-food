@@ -113,6 +113,16 @@ textarea{resize:none;min-height:72px}
 .ibanner{display:none;background:var(--gbg);border:1px solid rgba(59,109,17,.2);border-radius:var(--r);padding:12px 16px;margin-bottom:12px;align-items:center;gap:10px}
 .ibanner.show{display:flex}
 .ibt{flex:1;font-size:13px;color:var(--green);line-height:1.5}
+.rlabel{font-size:12px;font-weight:500;color:var(--t2);margin-bottom:8px}
+.rbtn-row{display:flex;flex-wrap:wrap;gap:8px}
+.rbtn{padding:8px 14px;border:1.5px solid var(--border2);border-radius:20px;background:var(--s2);font-size:13px;color:var(--t2);cursor:pointer;font-family:inherit;transition:all .15s}
+.rbtn:active{transform:scale(.96)}
+.rbtn.on{background:var(--gbg);color:var(--green);border-color:rgba(59,109,17,.4);font-weight:500}
+.rbtn-wide{border-radius:10px}
+.fchip{padding:8px 14px;border:1.5px solid var(--border2);border-radius:20px;background:var(--s2);font-size:13px;color:var(--t2);cursor:pointer;font-family:inherit;transition:all .15s;display:inline-block;margin:0}
+.fchip.on{background:var(--gbg);color:var(--green);border-color:rgba(59,109,17,.4);font-weight:500}
+.fchip-group{margin-bottom:14px}
+.fchip-group-title{font-size:11px;font-weight:600;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -215,24 +225,73 @@ textarea{resize:none;min-height:72px}
 
   <div class="sec" id="sec-log">
     <div class="shd">
-      <div><div class="shdt">饮食记录</div><div class="shds">全家共同查看和记录</div></div>
+      <div><div class="shdt">饮食记录</div><div class="shds">点选记录，全家共同查看</div></div>
     </div>
+
+    <!-- Step 1: 日期 + 记录人 + 餐次 -->
     <div class="card">
-      <div class="ct">新增记录</div>
-      <div class="fgr">
-        <div class="fg"><label>日期</label><input type="date" id="lf-date"></div>
-        <div class="fg"><label>记录人</label><input type="text" id="lf-who" placeholder="妈妈 / 奶奶 / 爸爸"></div>
-        <div class="fg"><label>餐次</label>
-          <select id="lf-meal"><option value="main">🍽️ 上午正餐</option><option value="snack">🍪 下午点心</option><option value="finger">✋ 傍晚手指食物</option></select>
-        </div>
-        <div class="fg"><label>进食情况</label>
-          <select id="lf-reaction"><option value="ok">✅ 正常无反应</option><option value="warn">⚠️ 轻微异常</option><option value="alert">❌ 有明显反应</option></select>
-        </div>
-        <div class="fg fgf"><label>食材内容</label><input type="text" id="lf-foods" placeholder="如：猪肉泥 20g、南瓜 25g、米粉糊 15g…"></div>
-        <div class="fg fgf"><label>备注</label><textarea id="lf-note" placeholder="进食量、宝宝反应、偏好…"></textarea></div>
+      <div class="ct">① 基本信息</div>
+      <!-- 日期 -->
+      <div style="margin-bottom:14px">
+        <div class="rlabel">日期</div>
+        <div class="rbtn-row" id="date-btns"></div>
       </div>
-      <button class="btn btng btnf" onclick="saveLog()">💾 保存记录</button>
+      <!-- 记录人 -->
+      <div style="margin-bottom:14px">
+        <div class="rlabel">记录人</div>
+        <div class="rbtn-row">
+          <button class="rbtn" onclick="selWho(this,'妈妈')">妈妈</button>
+          <button class="rbtn" onclick="selWho(this,'爸爸')">爸爸</button>
+          <button class="rbtn" onclick="selWho(this,'奶奶')">奶奶</button>
+          <button class="rbtn" onclick="selWho(this,'姥姥')">姥姥</button>
+        </div>
+      </div>
+      <!-- 餐次 -->
+      <div>
+        <div class="rlabel">餐次</div>
+        <div class="rbtn-row">
+          <button class="rbtn rbtn-wide" onclick="selMeal(this,'main')">🍽️ 上午正餐</button>
+          <button class="rbtn rbtn-wide" onclick="selMeal(this,'snack')">🍪 下午点心</button>
+          <button class="rbtn rbtn-wide" onclick="selMeal(this,'finger')">✋ 傍晚手指食物</button>
+        </div>
+      </div>
     </div>
+
+    <!-- Step 2: 食材点选 -->
+    <div class="card">
+      <div class="ct">② 今日食材 <span style="font-weight:400;color:var(--t3);font-size:11px">可多选</span></div>
+      <div id="food-chips-wrap"></div>
+    </div>
+
+    <!-- Step 3: 进食情况 -->
+    <div class="card">
+      <div class="ct">③ 进食情况</div>
+      <div style="margin-bottom:14px">
+        <div class="rlabel">进食量</div>
+        <div class="rbtn-row">
+          <button class="rbtn" onclick="selAmt(this,'全部吃完')">😋 全部</button>
+          <button class="rbtn" onclick="selAmt(this,'大部分')">🙂 大部分</button>
+          <button class="rbtn" onclick="selAmt(this,'约一半')">😐 一半</button>
+          <button class="rbtn" onclick="selAmt(this,'少量')">😑 少量</button>
+          <button class="rbtn" onclick="selAmt(this,'几乎不吃')">😤 不吃</button>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="rlabel">反应情况</div>
+        <div class="rbtn-row">
+          <button class="rbtn rbtn-wide" onclick="selReaction(this,'ok')">✅ 正常无反应</button>
+          <button class="rbtn rbtn-wide" onclick="selReaction(this,'warn')">⚠️ 轻微异常</button>
+          <button class="rbtn rbtn-wide" onclick="selReaction(this,'alert')">❌ 有明显反应</button>
+        </div>
+      </div>
+      <div>
+        <div class="rlabel">补充备注（可选）</div>
+        <textarea id="lf-note" placeholder="如：特别喜欢南瓜，牛肉条抓得很起劲…" style="margin-top:6px"></textarea>
+      </div>
+    </div>
+
+    <button class="btn btng btnf" onclick="saveLog()" style="margin-bottom:12px">💾 保存记录</button>
+
     <div class="card">
       <div class="ct">历史记录 <span id="lc" style="font-weight:400;color:var(--t3)">0 条</span></div>
       <div id="ll"><div class="empty">暂无记录，快去添加～</div></div>
@@ -451,7 +510,100 @@ function saveAllergy(){
   renderAllergy();genMenu();toast(`✅ 已记录：${name}`);
 }
 
-function renderLogs(){
+// ── 记录页点选状态 ──
+let logState = { date: ts(), who: '', meal: '', foods: new Set(), amt: '', reaction: '' };
+
+function initLogForm() {
+  // 日期按钮：今天 / 昨天
+  const today = ts();
+  const yd = new Date(); yd.setDate(yd.getDate()-1);
+  const yesterday = yd.toISOString().split('T')[0];
+  const ymd = d => { const dt=new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}`; };
+  document.getElementById('date-btns').innerHTML = `
+    <button class="rbtn${logState.date===today?' on':''}" onclick="selDate(this,'${today}')">今天 ${ymd(today)}</button>
+    <button class="rbtn${logState.date===yesterday?' on':''}" onclick="selDate(this,'${yesterday}')">昨天 ${ymd(yesterday)}</button>`;
+  renderFoodChips();
+}
+
+function selDate(el, v) { logState.date=v; document.querySelectorAll('#date-btns .rbtn').forEach(b=>b.classList.remove('on')); el.classList.add('on'); }
+function selWho(el, v) { logState.who=v; el.closest('.rbtn-row').querySelectorAll('.rbtn').forEach(b=>b.classList.remove('on')); el.classList.add('on'); }
+function selMeal(el, v) { logState.meal=v; el.closest('.rbtn-row').querySelectorAll('.rbtn').forEach(b=>b.classList.remove('on')); el.classList.add('on'); renderFoodChips(); }
+function selAmt(el, v) { logState.amt=v; el.closest('.rbtn-row').querySelectorAll('.rbtn').forEach(b=>b.classList.remove('on')); el.classList.add('on'); }
+function selReaction(el, v) { logState.reaction=v; el.closest('.rbtn-row').querySelectorAll('.rbtn').forEach(b=>b.classList.remove('on')); el.classList.add('on'); }
+function toggleFood(name) {
+  if (logState.foods.has(name)) logState.foods.delete(name);
+  else logState.foods.add(name);
+  renderFoodChips();
+}
+
+function renderFoodChips() {
+  const meal = logState.meal;
+  // 按餐次过滤推荐食材
+  const proteins = D.allergyDone.filter(f=>f.cat==='肉蛋类'&&f.result==='ok').map(f=>f.name);
+  const vegs = D.allergyDone.filter(f=>f.cat==='蔬菜类'&&f.result==='ok').map(f=>f.name);
+  const starches = D.allergyDone.filter(f=>f.cat==='主食类'&&f.result==='ok').map(f=>f.name);
+  const nuts = D.allergyDone.filter(f=>(f.cat==='调味辅料'||f.cat==='坚果类')&&f.result==='ok'&&f.name!=='核桃油').map(f=>f.name);
+  const oils = D.allergyDone.filter(f=>f.cat==='调味辅料'&&f.result==='ok'&&f.name==='核桃油').map(f=>f.name);
+
+  let groups = [];
+  if (!meal || meal==='main') {
+    groups = [
+      {title:'主食',items:[...starches,'米粉糊','面条碎'].filter((v,i,a)=>a.indexOf(v)===i)},
+      {title:'肉蛋',items:[...proteins,'蛋黄']},
+      {title:'蔬菜',items:vegs},
+      {title:'食用油',items:[...oils,'核桃油'].filter((v,i,a)=>a.indexOf(v)===i)},
+    ];
+  } else if (meal==='snack') {
+    groups = [
+      {title:'坚果酱',items:[...nuts,'黑芝麻糊','核桃酱'].filter((v,i,a)=>a.indexOf(v)===i)},
+      {title:'主食',items:[...starches,'米粉糊'].filter((v,i,a)=>a.indexOf(v)===i)},
+    ];
+  } else if (meal==='finger') {
+    const ff = D.fingerFoods.map(f=>f.name);
+    groups = [
+      {title:'蔬菜手指食物',items:[...vegs.map(v=>v+'条/块'),...ff.filter(f=>!proteins.some(p=>f.includes(p)))].filter((v,i,a)=>a.indexOf(v)===i)},
+      {title:'肉类手指食物',items:ff.filter(f=>proteins.some(p=>f.includes(p))).concat(proteins.map(p=>p+'软条')).filter((v,i,a)=>a.indexOf(v)===i)},
+    ];
+  }
+
+  const wrap = document.getElementById('food-chips-wrap');
+  wrap.innerHTML = groups.filter(g=>g.items.length).map(g=>`
+    <div class="fchip-group">
+      <div class="fchip-group-title">${g.title}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${g.items.map(item=>`<button class="fchip${logState.foods.has(item)?' on':''}" onclick="toggleFood('${item}')">${item}</button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function saveLog() {
+  if (!logState.date) { toast('请选择日期'); return; }
+  if (!logState.meal) { toast('请选择餐次'); return; }
+  if (logState.foods.size === 0) { toast('请至少选择一种食材'); return; }
+  const foods = [...logState.foods].join('、');
+  const note = document.getElementById('lf-note').value.trim();
+  const entry = {
+    id: Date.now(),
+    date: logState.date,
+    who: logState.who,
+    meal: logState.meal,
+    foods: foods + (logState.amt ? `（${logState.amt}）` : ''),
+    reaction: logState.reaction || 'ok',
+    note
+  };
+  D.logs.unshift(entry);
+  sched();
+  // 重置状态
+  logState = { date: ts(), who: logState.who, meal: '', foods: new Set(), amt: '', reaction: '' };
+  document.getElementById('lf-note').value = '';
+  document.querySelectorAll('.rbtn.on, .fchip.on').forEach(b => {
+    if (!b.closest('#date-btns') && b.textContent.includes('今天')) return;
+    b.classList.remove('on');
+  });
+  initLogForm();
+  renderLogs();
+  toast('✅ 记录已保存');
+}
   const ml={'main':'🍽️ 正餐','snack':'🍪 点心','finger':'✋ 手指食物'};
   const mc={'main':'#185FA5','snack':'#854F0B','finger':'#3B6D11'};
   const rl={'ok':'✅ 无反应','warn':'⚠️ 轻微异常','alert':'❌ 有反应'};
@@ -518,7 +670,7 @@ function nav(name){
   document.getElementById('tab-'+name).classList.add('on');
   document.getElementById('scroll').scrollTop=0;
   if(name==='allergy')renderAllergy();
-  if(name==='log'){document.getElementById('lf-date').value=ts();renderLogs();}
+  if(name==='log'){ initLogForm(); renderLogs(); }
   if(name==='cal')renderCal();
 }
 function renderAll(){genMenu();renderAllergy();renderLogs();renderCal();}
@@ -531,7 +683,6 @@ window.addEventListener('beforeinstallprompt',e=>{
 function dismissInstall(){document.getElementById('ibanner').classList.remove('show');localStorage.setItem('idismiss','1');}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 
-document.getElementById('lf-date').value=ts();
 loadData();
 </script>
 </body>
