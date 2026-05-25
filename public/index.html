@@ -384,28 +384,19 @@ let D=JSON.parse(JSON.stringify(DEFAULT));
 let stimer=null;
 
 async function loadData(){
-  setSS('spin','连接中…');
-  try{
-    const r=await fetch(API);const j=await r.json();
-    if(j.ok&&j.data){D=Object.assign({},DEFAULT,j.data,{settings:Object.assign({},DEFAULT.settings,j.data.settings||{})});}
-    setSS('','已同步');
-  }catch(e){
-    const loc=localStorage.getItem('bfd');
-    if(loc)try{D=JSON.parse(loc);}catch(_){}
-    setSS('','离线模式');
-  }
+  setSS('','本地模式');
+  const loc=localStorage.getItem('bfd');
+  if(loc)try{
+    const saved=JSON.parse(loc);
+    D=Object.assign({},DEFAULT,saved,{settings:Object.assign({},DEFAULT.settings,saved.settings||{})});
+  }catch(_){}
   renderAll();
 }
 function sched(){clearTimeout(stimer);stimer=setTimeout(doSave,800);}
 async function doSave(){
-  setSS('spin','保存中…');
   localStorage.setItem('bfd',JSON.stringify(D));
-  try{
-    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:D})});
-    const j=await r.json();
-    if(j.ok){const now=new Date();setSS('',`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} 已同步`);}
-    else throw new Error();
-  }catch(e){setSS('','离线，已存本地');}
+  const now=new Date();
+  setSS('',`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} 已保存`);
 }
 function setSS(cls,msg){
   document.getElementById('sdot').className='sdot'+(cls?' '+cls:'');
