@@ -635,7 +635,7 @@ function renderFoodChips() {
     ];
   }
 
-  wrap.innerHTML = groups.filter(function(g) { return g.items.length; }).map(function(g) {
+  var chipsHtml = groups.filter(function(g) { return g.items.length; }).map(function(g) {
     return '<div class="fgrp"><div class="fgrp-title">' + g.title + '</div>' +
       '<div class="fgrp-chips">' +
       g.items.map(function(item) {
@@ -644,6 +644,44 @@ function renderFoodChips() {
       }).join('') +
       '</div></div>';
   }).join('');
+
+  // 手指食物专属：手动输入框
+  var customHtml = '';
+  if (LS.meal === 'finger') {
+    var customItems = LS.customFoods || [];
+    customHtml = '<div class="fgrp">' +
+      '<div class="fgrp-title">手动添加</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:' + (customItems.length ? '10px' : '0') + '">' +
+      '<input type="text" id="finger-custom-input" placeholder="输入其他食材，如：豆腐块" style="flex:1">' +
+      '<button class="btn btng bsm" onclick="addCustomFinger()">+ 添加</button>' +
+      '</div>' +
+      (customItems.length ?
+        '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+        customItems.map(function(item) {
+          return '<button class="fchip on" onclick="removeCustomFinger(\'' + item.replace(/'/g,'') + '\')">' + item + ' ×</button>';
+        }).join('') + '</div>' : '') +
+      '</div>';
+  }
+
+  wrap.innerHTML = chipsHtml + customHtml;
+}
+
+function addCustomFinger() {
+  var input = document.getElementById('finger-custom-input');
+  var val = input.value.trim();
+  if (!val) return;
+  if (!LS.customFoods) LS.customFoods = [];
+  if (LS.customFoods.indexOf(val) < 0) {
+    LS.customFoods.push(val);
+    if (LS.foods.indexOf(val) < 0) LS.foods.push(val);
+  }
+  input.value = '';
+  renderFoodChips();
+}
+function removeCustomFinger(name) {
+  if (LS.customFoods) LS.customFoods = LS.customFoods.filter(function(f) { return f !== name; });
+  LS.foods = LS.foods.filter(function(f) { return f !== name; });
+  renderFoodChips();
 }
 
 function saveLog() {
@@ -660,7 +698,7 @@ function saveLog() {
     note: document.getElementById('lf-note').value.trim()
   });
   sched();
-  LS = { date: tday(), who: LS.who, meal: '', foods: [], amt: '', reaction: '' };
+  LS = { date: tday(), who: LS.who, meal: '', foods: [], amt: '', reaction: '', customFoods: [] };
   document.getElementById('lf-note').value = '';
   initLog();
   // 重置按钮选中状态（保留记录人）
