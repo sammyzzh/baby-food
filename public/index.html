@@ -331,6 +331,7 @@ var DEFAULT = {
     {name:'番茄',cat:'蔬菜类',date:'2026-05-11',result:'ok',note:''},
     {name:'豌豆',cat:'蔬菜类',date:'2026-05-14',result:'ok',note:''},
     {name:'南瓜',cat:'蔬菜类',date:'2026-05-17',result:'ok',note:''},
+    {name:'青菜',cat:'蔬菜类',date:'2026-05-25',result:'ok',note:''},
     {name:'黑芝麻',cat:'调味辅料',date:'2026-05-14',result:'ok',note:''},
     {name:'核桃油',cat:'调味辅料',date:'2026-04-10',result:'ok',note:'每餐3-4滴'}
   ],
@@ -467,7 +468,7 @@ function genMenu() {
   var fingers = D.fingerFoods.length >= 2 ? pick(D.fingerFoods, 2) : D.fingerFoods;
 
   var pl = protein.replace(/肉$/, '肉泥').replace(/虾$/, '虾泥').replace(/鱼$/, '鱼泥');
-  var sl = starch === '面条' ? '面条碎' : starch + '糊';
+  var sl = starch === '面条' ? '面条糊' : starch + '糊';
   var nl = nut.indexOf('油') >= 0 ? nut : nut + '酱';
 
   document.getElementById('sp').textContent = protein;
@@ -617,7 +618,7 @@ function renderFoodChips() {
   var groups = [];
   if (LS.meal === 'main') {
     groups = [
-      { title: '主食', items: starches.concat(['米粉糊','面条碎']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
+      { title: '主食', items: ['米粉糊', '面条糊'] },
       { title: '肉蛋', items: proteins.concat(['蛋黄']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
       { title: '蔬菜', items: vegs },
       { title: '食用油', items: ['核桃油'] }
