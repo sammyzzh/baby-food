@@ -233,7 +233,7 @@ textarea{resize:none;min-height:72px}
         <div class="rlabel">餐次</div>
         <div class="rbtnrow">
           <button class="rbtn rbtn-w" onclick="selMeal(this,'main')">🍽️ 上午正餐</button>
-          <button class="rbtn rbtn-w" onclick="selMeal(this,'snack')">🍪 下午点心</button>
+          <button class="rbtn rbtn-w" onclick="selMeal(this,'snack')">🍽️ 下午正餐</button>
           <button class="rbtn rbtn-w" onclick="selMeal(this,'finger')">✋ 傍晚手指食物</button>
         </div>
       </div>
@@ -497,7 +497,7 @@ function genMenu() {
     '<div class="mrow"><span class="mn">蛋黄</span><span class="ma">半个</span></div>' +
     '<div class="mrow"><span class="mn">核桃油</span><span class="ma">3–4 滴</span></div>' +
     '</div><div class="mnote">分别蒸熟打泥混合，最后加核桃油。</div></div>' +
-    '<div class="meal"><div class="mhd"><span class="badge bs">下午点心</span><span class="mt">约 15:00</span></div>' +
+    '<div class="meal"><div class="mhd"><span class="badge bm">下午正餐</span><span class="mt">约 15:00</span></div>' +
     '<div class="mbody">' +
     '<div class="mrow"><span class="mn">' + nl + '</span><span class="ma">3–5 g</span></div>' +
     '<div class="mrow"><span class="mn">' + sl + '（稀薄）</span><span class="ma">5–10 g</span></div>' +
@@ -615,19 +615,19 @@ function renderFoodChips() {
     return (f.cat === '调味辅料' || f.cat === '坚果类') && f.result === 'ok' && f.name !== '核桃油';
   }).map(function(f) { return f.name; });
 
+  var mainGroups = [
+    { title: '主食', items: ['米粉糊', '面条糊', '谷物粉'] },
+    { title: '肉蛋', items: proteins.concat(['蛋黄']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
+    { title: '蔬菜', items: vegs },
+    { title: '坚果酱', items: ['黑芝麻', '花生酱'] },
+    { title: '食用油', items: ['核桃油'] }
+  ];
+
   var groups = [];
   if (LS.meal === 'main') {
-    groups = [
-      { title: '主食', items: ['米粉糊', '面条糊'] },
-      { title: '肉蛋', items: proteins.concat(['蛋黄']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
-      { title: '蔬菜', items: vegs },
-      { title: '食用油', items: ['核桃油'] }
-    ];
+    groups = mainGroups;
   } else if (LS.meal === 'snack') {
-    groups = [
-      { title: '坚果酱', items: nuts.length ? nuts : ['黑芝麻糊','核桃酱'] },
-      { title: '主食', items: starches.length ? starches : ['米粉糊'] }
-    ];
+    groups = mainGroups;
   } else {
     var ff = D.fingerFoods.map(function(f) { return f.name; });
     groups = [
@@ -713,8 +713,8 @@ function saveLog() {
 
 // ── 历史记录 ──
 function renderLogs() {
-  var ml = { main:'🍽️ 正餐', snack:'🍪 点心', finger:'✋ 手指食物' };
-  var mc = { main:'#185FA5', snack:'#854F0B', finger:'#3B6D11' };
+  var ml = { main:'🍽️ 上午正餐', snack:'🍽️ 下午正餐', finger:'✋ 手指食物' };
+  var mc = { main:'#185FA5', snack:'#3B6D11', finger:'#854F0B' };
   var rl = { ok:'✅ 无反应', warn:'⚠️ 轻微异常', alert:'❌ 有反应' };
   var rc = { ok:['var(--gbg)','var(--gn)'], warn:['var(--abg)','var(--am)'], alert:['var(--rbg)','var(--rd)'] };
   document.getElementById('lc').textContent = D.logs.length + ' 条';
@@ -774,7 +774,7 @@ function showCalDay(ds) {
   var entries = D.logs.filter(function(l) { return l.date === ds; });
   var det = document.getElementById('cal-detail');
   if (!entries.length) { det.style.display = 'none'; return; }
-  var ml = { main:'🍽️ 正餐', snack:'🍪 点心', finger:'✋ 手指食物' };
+  var ml = { main:'🍽️ 上午正餐', snack:'🍽️ 下午正餐', finger:'✋ 手指食物' };
   document.getElementById('cdt').textContent = fmtD(ds) + ' 的记录';
   document.getElementById('cdb').innerHTML = entries.map(function(l) {
     return '<div style="padding:10px 0;border-bottom:1px solid var(--bd)">' +
