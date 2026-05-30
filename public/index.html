@@ -616,9 +616,9 @@ function renderFoodChips() {
   }).map(function(f) { return f.name; });
 
   var mainGroups = [
-    { title: '主食', items: ['米粉糊', '面条糊', '谷物粉'] },
-    { title: '肉蛋', items: proteins.concat(['蛋黄']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
-    { title: '蔬菜', items: vegs },
+    { title: '主食', items: ['米粉糊', '面条糊', '谷物粉', '小米', '胚芽米'] },
+    { title: '肉蛋', items: proteins.concat(['蛋黄', '猪肝粉']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
+    { title: '蔬菜', items: vegs.concat(['菱角']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
     { title: '坚果酱', items: ['黑芝麻', '花生酱'] },
     { title: '食用油', items: ['核桃油'] }
   ];
