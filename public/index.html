@@ -727,6 +727,104 @@ function removeCustomFinger(name) {
   renderFoodChips();
 }
 
+// ── 自动排敏检测 ──
+// 从食材记录字符串里提取食材名（去掉克重、泥/末/糊等后缀）
+function extractFoodNames(foodsStr) {
+  // 先按顿号分割
+  return foodsStr.split('、').map(function(s) {
+    // 去掉括号内容（进食量）
+    s = s.replace(/（[^）]*）/g, '').trim();
+    // 去掉克重数字
+    s = s.replace(/\d+[-~]\d+g|\d+g|滴/g, '').trim();
+    // 去掉泥/末/糊/肉/条/块/软条/小块/小朵/瓣等烹饪后缀
+    s = s.replace(/(泥|末|糊|碎|粥|饭|条|块|瓣|小朵|软条|小块|肉末|肉泥|肉)$/, '').trim();
+    return s;
+  }).filter(function(s) { return s.length >= 2; });
+}
+
+function checkAutoAllergy(todayFoods, dateStr, reaction) {
+  var newlyPassed = [];
+
+  // 只有今天反应正常才检测
+  if (reaction === 'alert') return newlyPassed;
+
+  // 对今天吃的每种食材，统计过去所有记录中该食材出现且无明显过敏反应的日期
+  todayFoods.forEach(function(food) {
+    // 已经在排敏列表里的跳过
+    var alreadyDone = D.allergyDone.some(function(f) {
+      return f.name === food || food.indexOf(f.name) >= 0 || f.name.indexOf(food) >= 0;
+    });
+    if (alreadyDone) return;
+
+    // 收集所有日志中包含该食材且反应ok的日期（去重）
+    var okDates = [];
+    D.logs.forEach(function(log) {
+      if (log.reaction === 'alert') return; // 有明显过敏反应的不算
+      var names = extractFoodNames(log.foods);
+      var found = names.some(function(n) {
+        return n === food || n.indexOf(food) >= 0 || food.indexOf(n) >= 0;
+      });
+      if (found && okDates.indexOf(log.date) < 0) {
+        okDates.push(log.date);
+      }
+    });
+
+    // 排序
+    okDates.sort();
+
+    // 如果累计出现过3天（不一定连续，只要没有过敏记录），就算通过
+    if (okDates.length >= 3) {
+      // 检查这3天里有没有 alert 记录
+      var hasAlert = D.logs.some(function(log) {
+        if (log.reaction !== 'alert') return false;
+        var names = extractFoodNames(log.foods);
+        return names.some(function(n) {
+          return n === food || n.indexOf(food) >= 0 || food.indexOf(n) >= 0;
+        });
+      });
+      if (!hasAlert) {
+        // 自动加入已排敏列表
+        var cat = guessFoodCat(food);
+        D.allergyDone.push({
+          name: food,
+          cat: cat,
+          date: okDates[0], // 第一次吃的日期
+          result: 'ok',
+          note: '饮食记录自动通过（连续' + okDates.length + '天无反应）'
+        });
+        // 从待排敏列表里移除
+        var idx = D.allergyPending.findIndex(function(p) {
+          return p.name.indexOf(food) >= 0 || food.indexOf(p.name.split('（')[0]) >= 0;
+        });
+        if (idx >= 0) D.allergyPending.splice(idx, 1);
+        newlyPassed.push(food);
+      }
+    }
+  });
+
+  return newlyPassed;
+}
+
+function guessFoodCat(name) {
+  var meatKeywords = ['猪','鸡','牛','羊','鸭','肝','虾','鱼','三文','鲈','鳕','龙利','带鱼','鳊'];
+  var vegKeywords = ['菜','瓜','豆','菇','藕','芋','薯','葵','玉米','黄瓜','茄','椰','木耳','苦'];
+  var grainKeywords = ['米','粉','面','麦','谷'];
+  var nutKeywords = ['芝麻','花生','核桃','腰果','杏仁'];
+  for (var i = 0; i < meatKeywords.length; i++) {
+    if (name.indexOf(meatKeywords[i]) >= 0) return '肉蛋类';
+  }
+  for (var i = 0; i < vegKeywords.length; i++) {
+    if (name.indexOf(vegKeywords[i]) >= 0) return '蔬菜类';
+  }
+  for (var i = 0; i < grainKeywords.length; i++) {
+    if (name.indexOf(grainKeywords[i]) >= 0) return '主食类';
+  }
+  for (var i = 0; i < nutKeywords.length; i++) {
+    if (name.indexOf(nutKeywords[i]) >= 0) return '坚果类';
+  }
+  return '其他';
+}
+
 function saveLog() {
   if (!LS.meal) { toast('请选择餐次'); return; }
   var allFoods = LS.foods.slice();
@@ -756,13 +854,21 @@ function saveLog() {
   });
   // 按日期倒序排列
   D.logs.sort(function(a, b) { return b.date.localeCompare(a.date); });
+
+  // ── 自动排敏检测 ──
+  var newlyPassed = checkAutoAllergy(allFoods, LS.date, LS.reaction || 'ok');
   sched();
   LS = { date: tday(), who: '', meal: '', foods: [], amt: '', reaction: '', customFoods: [] };
   document.getElementById('lf-note').value = '';
   initLog();
   document.querySelectorAll('#sec-log .rbtn.on').forEach(function(b) { b.classList.remove('on'); });
   renderLogs();
-  toast('✅ 记录已保存');
+  if (newlyPassed.length) {
+    toast('🎉 ' + newlyPassed.join('、') + ' 排敏通过，已加入食材库！');
+    genMenu();
+  } else {
+    toast('✅ 记录已保存');
+  }
 }
 
 // ── 历史记录 ──
