@@ -677,8 +677,22 @@ function removeCustomFinger(name) {
 
 function saveLog() {
   if (!LS.meal) { toast('请选择餐次'); return; }
-  if (!LS.foods.length) { toast('请至少选择一种食材'); return; }
-  var foods = LS.foods.join('、') + (LS.amt ? '（' + LS.amt + '）' : '');
+  var allFoods = LS.foods.slice();
+  var customs = LS.customFoods || [];
+  // 手指食物允许只填手动添加，不强制点选
+  if (LS.meal === 'finger') {
+    if (!allFoods.length && !customs.length) { toast('请至少选择或填写一种食材'); return; }
+  } else {
+    if (!allFoods.length) { toast('请至少选择一种食材'); return; }
+  }
+  // 手动添加的食材保存进 fingerFoods 备选库
+  if (LS.meal === 'finger' && customs.length) {
+    customs.forEach(function(name) {
+      var exists = D.fingerFoods.some(function(f) { return f.name === name; });
+      if (!exists) D.fingerFoods.push({ name: name, note: '手动添加' });
+    });
+  }
+  var foods = allFoods.join('、') + (LS.amt ? '（' + LS.amt + '）' : '');
   D.logs.unshift({
     id: Date.now(),
     date: LS.date,
@@ -688,16 +702,13 @@ function saveLog() {
     reaction: LS.reaction || 'ok',
     note: document.getElementById('lf-note').value.trim()
   });
+  // 按日期倒序排列
+  D.logs.sort(function(a, b) { return b.date.localeCompare(a.date); });
   sched();
-  LS = { date: tday(), who: LS.who, meal: '', foods: [], amt: '', reaction: '', customFoods: [] };
+  LS = { date: tday(), who: '', meal: '', foods: [], amt: '', reaction: '', customFoods: [] };
   document.getElementById('lf-note').value = '';
   initLog();
-  // 重置按钮选中状态（保留记录人）
-  document.querySelectorAll('#sec-log .rbtn.on').forEach(function(b) {
-    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'who'") < 0) {
-      b.classList.remove('on');
-    }
-  });
+  document.querySelectorAll('#sec-log .rbtn.on').forEach(function(b) { b.classList.remove('on'); });
   renderLogs();
   toast('✅ 记录已保存');
 }
@@ -713,7 +724,8 @@ function renderLogs() {
     document.getElementById('ll').innerHTML = '<div class="empty">暂无记录，快去添加～</div>';
     return;
   }
-  document.getElementById('ll').innerHTML = D.logs.map(function(l) {
+  var sorted = D.logs.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
+  document.getElementById('ll').innerHTML = sorted.map(function(l) {
     var r = rc[l.reaction] || rc.ok;
     return '<div class="logi">' +
       '<div class="ldot" style="background:' + (mc[l.meal]||'#185FA5') + '"></div>' +
