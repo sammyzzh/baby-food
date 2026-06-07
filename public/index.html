@@ -261,6 +261,10 @@ textarea{resize:none;min-height:72px}
       <div style="margin-bottom:14px">
         <div class="rlabel">日期</div>
         <div class="rbtnrow" id="date-btns"></div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;color:var(--t2);flex-shrink:0">其他日期：</span>
+          <input type="date" id="lf-date-picker" style="flex:1;font-size:13px;padding:6px 10px" onchange="selDatePicker(this.value)">
+        </div>
       </div>
       <div>
         <div class="rlabel">餐次</div>
@@ -301,6 +305,36 @@ textarea{resize:none;min-height:72px}
       </div>
     </div>
     <button class="btn btng btnf sec-mb" onclick="saveLog()">💾 保存记录</button>
+
+    <!-- 编辑记录的弹出表单 -->
+    <div class="card" id="edit-log-card" style="display:none;border-color:var(--am)">
+      <div class="ct" style="margin-bottom:12px">✏️ 修改记录 <button class="btn bsm" style="margin-left:auto" onclick="closeEditLog()">取消</button></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="fg"><label>日期</label><input type="date" id="edit-date"></div>
+        <div class="fg"><label>餐次</label>
+          <select id="edit-meal">
+            <option value="main">🍽️ 上午正餐</option>
+            <option value="snack">🍽️ 下午正餐</option>
+            <option value="finger">✋ 傍晚手指食物</option>
+          </select>
+        </div>
+        <div class="fg" style="grid-column:1/-1"><label>食材内容</label>
+          <input type="text" id="edit-foods" placeholder="如：猪肉泥、南瓜、米粉糊">
+        </div>
+        <div class="fg"><label>进食情况</label>
+          <select id="edit-reaction">
+            <option value="ok">✅ 正常无反应</option>
+            <option value="warn">⚠️ 轻微异常</option>
+            <option value="alert">❌ 有明显反应</option>
+          </select>
+        </div>
+        <div class="fg"><label>备注</label>
+          <input type="text" id="edit-note" placeholder="备注">
+        </div>
+      </div>
+      <button class="btn btng btnf" onclick="saveEditLog()">保存修改</button>
+    </div>
+
     <div class="card">
       <div class="ct">历史记录 <span id="lc" style="font-weight:400;color:var(--t3)">0 条</span></div>
       <div id="ll"><div class="empty">暂无记录，快去添加～</div></div>
@@ -647,17 +681,43 @@ function initLog() {
   var t = tday();
   var yd = new Date(); yd.setDate(yd.getDate() - 1);
   var y = yd.toISOString().split('T')[0];
+  var bd = new Date(); bd.setDate(bd.getDate() - 2);
+  var b = bd.toISOString().split('T')[0];
   var fmt = function(d) { var dt = new Date(d+'T00:00:00'); return (dt.getMonth()+1) + '/' + dt.getDate(); };
   document.getElementById('date-btns').innerHTML =
     '<button class="rbtn' + (LS.date === t ? ' on' : '') + '" onclick="selDate(this,\'' + t + '\')">今天 ' + fmt(t) + '</button>' +
-    '<button class="rbtn' + (LS.date === y ? ' on' : '') + '" onclick="selDate(this,\'' + y + '\')">昨天 ' + fmt(y) + '</button>';
+    '<button class="rbtn' + (LS.date === y ? ' on' : '') + '" onclick="selDate(this,\'' + y + '\')">昨天 ' + fmt(y) + '</button>' +
+    '<button class="rbtn' + (LS.date === b ? ' on' : '') + '" onclick="selDate(this,\'' + b + '\')">前天 ' + fmt(b) + '</button>';
+  // 同步日期选择器
+  var picker = document.getElementById('lf-date-picker');
+  if (picker) picker.value = LS.date;
   renderFoodChips();
+}
+
+function selDatePicker(val) {
+  if (!val) return;
+  LS.date = val;
+  // 清除快捷按钮选中状态
+  document.querySelectorAll('#date-btns .rbtn').forEach(function(b) { b.classList.remove('on'); });
+  // 如果选的是今天/昨天/前天，同步高亮快捷按钮
+  var t = tday();
+  var yd = new Date(); yd.setDate(yd.getDate()-1); var y = yd.toISOString().split('T')[0];
+  var bd = new Date(); bd.setDate(bd.getDate()-2); var bv = bd.toISOString().split('T')[0];
+  document.querySelectorAll('#date-btns .rbtn').forEach(function(b) {
+    if ((val===t && b.textContent.includes('今天')) ||
+        (val===y && b.textContent.includes('昨天')) ||
+        (val===bv && b.textContent.includes('前天'))) {
+      b.classList.add('on');
+    }
+  });
 }
 
 function selDate(el, v) {
   LS.date = v;
   el.parentNode.querySelectorAll('.rbtn').forEach(function(b) { b.classList.remove('on'); });
   el.classList.add('on');
+  var picker = document.getElementById('lf-date-picker');
+  if (picker) picker.value = v;
 }
 function selVal(el, key, v) {
   LS[key] = v;
@@ -689,8 +749,8 @@ function renderFoodChips() {
   }).map(function(f) { return f.name; });
 
   var mainGroups = [
-    { title: '主食', items: ['米粉糊', '面条糊', '谷物粉', '小米', '胚芽米'] },
-    { title: '肉蛋', items: proteins.concat(['蛋黄', '猪肝粉']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
+    { title: '主食', items: ['米粉糊', '面条糊', '谷物粉', '小米', '胚芽米', '低筋粉'] },
+    { title: '肉蛋', items: proteins.concat(['蛋黄', '猪肝粉', '三文鱼']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
     { title: '蔬菜', items: vegs.concat(['菱角']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
     { title: '坚果酱', items: ['黑芝麻', '花生酱'] },
     { title: '食用油', items: ['核桃油'] }
@@ -923,6 +983,7 @@ function renderLogs() {
       (l.note ? '<div class="lnote">' + l.note + '</div>' : '') +
       '<span class="ltag" style="background:' + r[0] + ';color:' + r[1] + '">' + (rl[l.reaction]||'') + '</span>' +
       '</div>' +
+      '<button class="delbtn" style="color:var(--bl);font-size:14px;margin-right:2px" onclick="editLog(' + l.id + ')" title="编辑">✏️</button>' +
       '<button class="delbtn" onclick="delLog(' + l.id + ')">×</button>' +
       '</div>';
   }).join('');
@@ -931,6 +992,40 @@ function delLog(id) {
   if (!confirm('确认删除？')) return;
   D.logs = D.logs.filter(function(l) { return l.id !== id; });
   sched(); renderLogs();
+}
+
+var editingLogId = null;
+function editLog(id) {
+  var log = D.logs.find(function(l) { return l.id === id; });
+  if (!log) return;
+  editingLogId = id;
+  document.getElementById('edit-date').value = log.date;
+  document.getElementById('edit-meal').value = log.meal;
+  document.getElementById('edit-foods').value = log.foods;
+  document.getElementById('edit-reaction').value = log.reaction || 'ok';
+  document.getElementById('edit-note').value = log.note || '';
+  var card = document.getElementById('edit-log-card');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function closeEditLog() {
+  editingLogId = null;
+  document.getElementById('edit-log-card').style.display = 'none';
+}
+function saveEditLog() {
+  if (!editingLogId) return;
+  var idx = D.logs.findIndex(function(l) { return l.id === editingLogId; });
+  if (idx < 0) return;
+  D.logs[idx].date = document.getElementById('edit-date').value;
+  D.logs[idx].meal = document.getElementById('edit-meal').value;
+  D.logs[idx].foods = document.getElementById('edit-foods').value.trim();
+  D.logs[idx].reaction = document.getElementById('edit-reaction').value;
+  D.logs[idx].note = document.getElementById('edit-note').value.trim();
+  D.logs.sort(function(a, b) { return b.date.localeCompare(a.date); });
+  sched();
+  closeEditLog();
+  renderLogs();
+  toast('✅ 记录已修改');
 }
 
 // ── 日历 ──
