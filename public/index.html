@@ -983,6 +983,7 @@ function renderLogs() {
       (l.note ? '<div class="lnote">' + l.note + '</div>' : '') +
       '<span class="ltag" style="background:' + r[0] + ';color:' + r[1] + '">' + (rl[l.reaction]||'') + '</span>' +
       '</div>' +
+      '<button class="delbtn" style="color:var(--gn);font-size:14px;margin-right:2px" onclick="copyLog(' + l.id + ')" title="复制">📋</button>' +
       '<button class="delbtn" style="color:var(--bl);font-size:14px;margin-right:2px" onclick="editLog(' + l.id + ')" title="编辑">✏️</button>' +
       '<button class="delbtn" onclick="delLog(' + l.id + ')">×</button>' +
       '</div>';
@@ -995,6 +996,40 @@ function delLog(id) {
 }
 
 var editingLogId = null;
+function copyLog(id) {
+  var log = D.logs.find(function(l) { return l.id === id; });
+  if (!log) return;
+  // 填入新增表单，日期默认今天
+  nav('log');
+  // 设置 LS 状态，预填食材和餐次
+  LS.date = tday();
+  LS.meal = log.meal;
+  LS.reaction = log.reaction || 'ok';
+  LS.amt = '';
+  LS.foods = [];
+  LS.customFoods = [];
+  // 解析原记录的食材名
+  var rawFoods = log.foods.replace(/（[^）]*）/g, '').split('、').map(function(s) { return s.trim(); }).filter(Boolean);
+  LS.foods = rawFoods;
+  // 填入备注
+  setTimeout(function() {
+    initLog();
+    // 同步快捷按钮
+    document.querySelectorAll('#date-btns .rbtn').forEach(function(b) {
+      if (b.textContent.includes('今天')) b.classList.add('on');
+    });
+    // 同步餐次按钮
+    var mealMap = { main:'上午正餐', snack:'下午正餐', finger:'手指食物' };
+    document.querySelectorAll('#sec-log .rbtn-w').forEach(function(b) {
+      if (b.textContent.includes(mealMap[log.meal]||'')) b.classList.add('on');
+    });
+    document.getElementById('lf-note').value = log.note || '';
+    renderFoodChips();
+    // 滚到顶部
+    document.getElementById('scroll').scrollTop = 0;
+    toast('📋 已复制，修改日期后保存');
+  }, 50);
+}
 function editLog(id) {
   var log = D.logs.find(function(l) { return l.id === id; });
   if (!log) return;
