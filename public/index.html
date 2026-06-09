@@ -153,6 +153,22 @@ textarea{resize:none;min-height:72px}
 .ff-ing-name{font-weight:500;min-width:60px}
 .ff-ing-amt{color:var(--gn);font-size:12px;min-width:40px}
 .ff-ing-note{color:var(--t3);font-size:11px;flex:1}
+/* 周视图 */
+.wv-day{border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:10px;overflow:hidden}
+.wv-day-hd{padding:8px 12px;background:var(--s2);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
+.wv-day-hd.today{background:var(--gbg)}
+.wv-date{font-size:13px;font-weight:600}
+.wv-dow{font-size:11px;color:var(--t3)}
+.wv-empty{font-size:12px;color:var(--t3);padding:10px 12px;font-style:italic}
+.wv-meal{padding:8px 12px;border-bottom:1px solid var(--bd)}
+.wv-meal:last-child{border-bottom:none}
+.wv-meal-tag{font-size:10px;padding:1px 7px;border-radius:20px;margin-right:6px;display:inline-block;vertical-align:middle}
+.wv-foods{font-size:12px;color:var(--tx);line-height:1.6;margin-top:4px}
+.wv-note{font-size:11px;color:var(--t3);margin-top:2px}
+.wv-reaction{font-size:10px;display:inline-block;margin-top:3px;padding:1px 7px;border-radius:20px}
+.wv-protein-chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin:2px 2px 0 0;background:var(--abg);color:var(--am)}
+.wv-veg-chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin:2px 2px 0 0;background:var(--gbg);color:var(--gn)}
+.wv-week-summary{background:var(--s2);border-radius:var(--rs);padding:12px;margin-bottom:14px;font-size:12px;color:var(--t2);line-height:1.9}
 </style>
 </head>
 <body>
@@ -336,8 +352,24 @@ textarea{resize:none;min-height:72px}
     </div>
 
     <div class="card">
-      <div class="ct">历史记录 <span id="lc" style="font-weight:400;color:var(--t3)">0 条</span></div>
+      <div class="ct">
+        历史记录 <span id="lc" style="font-weight:400;color:var(--t3)">0 条</span>
+        <div style="display:flex;gap:6px;margin-left:auto">
+          <button class="btn bsm" id="view-list-btn" onclick="setLogView('list')" style="background:var(--gbg);color:var(--gn);border-color:rgba(59,109,17,.3)">列表</button>
+          <button class="btn bsm" id="view-week-btn" onclick="setLogView('week')">周视图</button>
+        </div>
+      </div>
+      <!-- 列表视图 -->
       <div id="ll"><div class="empty">暂无记录，快去添加～</div></div>
+      <!-- 周视图 -->
+      <div id="log-week-view" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <button class="btn bsm" onclick="logWeekMove(-1)">← 上周</button>
+          <span style="font-size:14px;font-weight:500" id="log-week-label">本周</span>
+          <button class="btn bsm" onclick="logWeekMove(1)">下周 →</button>
+        </div>
+        <div id="log-week-body"></div>
+      </div>
     </div>
   </div>
 
@@ -962,6 +994,113 @@ function saveLog() {
 }
 
 // ── 历史记录 ──
+// ── 周视图 ──
+var logView = 'list';
+var logWeekOffset = 0;
+
+function setLogView(v) {
+  logView = v;
+  document.getElementById('ll').style.display = v === 'list' ? 'block' : 'none';
+  document.getElementById('log-week-view').style.display = v === 'week' ? 'block' : 'none';
+  document.getElementById('view-list-btn').style.background = v === 'list' ? 'var(--gbg)' : '';
+  document.getElementById('view-list-btn').style.color = v === 'list' ? 'var(--gn)' : '';
+  document.getElementById('view-list-btn').style.borderColor = v === 'list' ? 'rgba(59,109,17,.3)' : '';
+  document.getElementById('view-week-btn').style.background = v === 'week' ? 'var(--gbg)' : '';
+  document.getElementById('view-week-btn').style.color = v === 'week' ? 'var(--gn)' : '';
+  document.getElementById('view-week-btn').style.borderColor = v === 'week' ? 'rgba(59,109,17,.3)' : '';
+  if (v === 'week') renderLogWeek();
+}
+
+function logWeekMove(dir) {
+  logWeekOffset += dir;
+  renderLogWeek();
+}
+
+function renderLogWeek() {
+  var today = tday();
+  var todayDate = new Date(today + 'T00:00:00');
+  var weekStart = new Date(todayDate);
+  var dow = weekStart.getDay();
+  weekStart.setDate(weekStart.getDate() + (dow === 0 ? -6 : 1 - dow) + logWeekOffset * 7);
+
+  var fmt = function(d) { return (d.getMonth()+1) + '月' + d.getDate() + '日'; };
+  var weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+  document.getElementById('log-week-label').textContent = fmt(weekStart) + ' — ' + fmt(weekEnd);
+
+  // 收集本周日志
+  var logsByDate = {};
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
+    var ds = d.toISOString().split('T')[0];
+    logsByDate[ds] = D.logs.filter(function(l) { return l.date === ds; });
+  }
+
+  // 本周汇总：蛋白质种类、蔬菜种类
+  var weekProteins = new Set(), weekVegs = new Set();
+  var PROT_KW = ['猪肉','鸡肉','牛肉','鳕鱼','海虾','三文鱼','鲈鱼','龙利鱼','猪肝','鸡肝','羊肉','鸭肉','带鱼','蛋黄','虾'];
+  var VEG_KW = ['西兰花','胡萝卜','菠菜','番茄','豌豆','南瓜','青菜','小白菜','生菜','紫甘蓝','茄子','扁豆','丝瓜','冬瓜','香菇','莲藕','玉米','黄瓜','花椰菜','西葫芦','毛豆','口蘑','芋头','紫薯','山药','红薯','黑木耳','豌豆苗','秋葵','菱角'];
+
+  Object.values(logsByDate).forEach(function(logs) {
+    logs.forEach(function(log) {
+      if (log.reaction === 'alert') return;
+      var parts = log.foods.replace(/（[^）]*）/g,'').split('、');
+      parts.forEach(function(p) {
+        p = p.trim();
+        PROT_KW.forEach(function(k) { if (p.indexOf(k) >= 0) weekProteins.add(k); });
+        VEG_KW.forEach(function(k) { if (p.indexOf(k) >= 0) weekVegs.add(k); });
+      });
+    });
+  });
+
+  var summaryHtml = '';
+  if (weekProteins.size || weekVegs.size) {
+    summaryHtml = '<div class="wv-week-summary">' +
+      (weekProteins.size ? '<div><b>本周蛋白质：</b>' + Array.from(weekProteins).map(function(p){return '<span class="wv-protein-chip">'+p+'</span>';}).join('') + '</div>' : '') +
+      (weekVegs.size ? '<div style="margin-top:4px"><b>本周蔬菜：</b>' + Array.from(weekVegs).map(function(v){return '<span class="wv-veg-chip">'+v+'</span>';}).join('') + '</div>' : '') +
+      '</div>';
+  }
+
+  var dw = ['日','一','二','三','四','五','六'];
+  var ml = { main:'🍽️ 上午', snack:'🍽️ 下午', finger:'✋ 手指' };
+  var mc = { main:'badge-main', snack:'badge-snack', finger:'badge-finger' };
+  var rc = { ok:'', warn:'⚠️ ', alert:'❌ ' };
+
+  var daysHtml = '';
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
+    var ds = d.toISOString().split('T')[0];
+    var isToday = ds === today;
+    var logs = logsByDate[ds] || [];
+    // 排序：main > snack > finger
+    var order = { main: 0, snack: 1, finger: 2 };
+    logs = logs.slice().sort(function(a,b){ return (order[a.meal]||0)-(order[b.meal]||0); });
+
+    daysHtml += '<div class="wv-day">' +
+      '<div class="wv-day-hd' + (isToday ? ' today' : '') + '">' +
+      '<span class="wv-date">' + (isToday ? '📍 ' : '') + fmt(d) + '</span>' +
+      '<span class="wv-dow">周' + dw[d.getDay()] + (isToday ? ' · 今天' : '') + '</span>' +
+      '</div>';
+
+    if (!logs.length) {
+      daysHtml += '<div class="wv-empty">暂无记录</div>';
+    } else {
+      logs.forEach(function(log) {
+        var reactionIcon = rc[log.reaction] || '';
+        var foodDisplay = log.foods.length > 40 ? log.foods.substring(0,40) + '…' : log.foods;
+        daysHtml += '<div class="wv-meal">' +
+          '<span class="wv-meal-tag meal-badge ' + (mc[log.meal]||'badge-main') + '">' + (ml[log.meal]||log.meal) + '</span>' +
+          (reactionIcon ? '<span style="font-size:12px">' + reactionIcon + '</span>' : '') +
+          '<div class="wv-foods">' + foodDisplay + '</div>' +
+          (log.note ? '<div class="wv-note">' + log.note + '</div>' : '') +
+          '</div>';
+      });
+    }
+    daysHtml += '</div>';
+  }
+
+  document.getElementById('log-week-body').innerHTML = summaryHtml + daysHtml;
+}
+
 function renderLogs() {
   var ml = { main:'🍽️ 上午正餐', snack:'🍽️ 下午正餐', finger:'✋ 手指食物' };
   var mc = { main:'#185FA5', snack:'#3B6D11', finger:'#854F0B' };
@@ -988,6 +1127,7 @@ function renderLogs() {
       '<button class="delbtn" onclick="delLog(' + l.id + ')">×</button>' +
       '</div>';
   }).join('');
+  if (logView === 'week') renderLogWeek();
 }
 function delLog(id) {
   if (!confirm('确认删除？')) return;
