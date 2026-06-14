@@ -244,7 +244,7 @@ textarea{resize:none;min-height:72px}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
         <div class="fg"><label>食材名称</label><input type="text" id="af-name" placeholder="如：小白菜"></div>
         <div class="fg"><label>分类</label>
-          <select id="af-cat"><option value="主食类">主食类</option><option value="肉蛋类">肉蛋类</option><option value="蔬菜类" selected>蔬菜类</option><option value="调味辅料">调味辅料</option><option value="坚果类">坚果类</option></select>
+          <select id="af-cat"><option value="主食类">主食类</option><option value="肉蛋类">肉蛋类</option><option value="蔬菜类" selected>蔬菜类</option><option value="菌菇类">菌菇类</option><option value="调味辅料">调味辅料</option><option value="坚果类">坚果类</option></select>
         </div>
         <div class="fg"><label>开始日期</label><input type="date" id="af-date"></div>
         <div class="fg"><label>反应结果</label>
@@ -653,7 +653,7 @@ function renderAllergy() {
     if (!byCat[f.cat]) byCat[f.cat] = [];
     byCat[f.cat].push(f);
   });
-  var icons = {'主食类':'🌾','肉蛋类':'🥩','蔬菜类':'🥦','调味辅料':'🫙','坚果类':'🥜'};
+  var icons = {'主食类':'🌾','肉蛋类':'🥩','蔬菜类':'🥦','菌菇类':'🍄','调味辅料':'🫙','坚果类':'🥜'};
   var html = '';
   Object.keys(byCat).forEach(function(cat) {
     html += '<div class="ag"><div class="agt">' + (icons[cat]||'🍴') + ' ' + cat + '</div><div class="chips">';
@@ -783,7 +783,7 @@ function renderFoodChips() {
   var mainGroups = [
     { title: '主食', items: ['米粉糊', '面条糊', '谷物粉', '小米', '胚芽米', '低筋粉'] },
     { title: '肉蛋', items: proteins.concat(['蛋黄', '猪肝粉', '三文鱼']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
-    { title: '蔬菜', items: vegs.concat(['菱角']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
+    { title: '蔬菜', items: vegs.concat(['菱角', '香菇']).filter(function(v,i,a){return a.indexOf(v)===i;}) },
     { title: '坚果酱', items: ['黑芝麻', '花生酱'] },
     { title: '食用油', items: ['核桃油'] }
   ];
