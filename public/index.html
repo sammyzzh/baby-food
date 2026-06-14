@@ -297,24 +297,6 @@ textarea{resize:none;min-height:72px}
     </div>
     <div class="card">
       <div class="ct">③ 进食情况</div>
-      <div style="margin-bottom:14px">
-        <div class="rlabel">进食量</div>
-        <div class="rbtnrow">
-          <button class="rbtn" onclick="selVal(this,'amt','全部吃完')">😋 全部</button>
-          <button class="rbtn" onclick="selVal(this,'amt','大部分')">🙂 大部分</button>
-          <button class="rbtn" onclick="selVal(this,'amt','约一半')">😐 一半</button>
-          <button class="rbtn" onclick="selVal(this,'amt','少量')">😑 少量</button>
-          <button class="rbtn" onclick="selVal(this,'amt','几乎不吃')">😤 不吃</button>
-        </div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div class="rlabel">反应情况</div>
-        <div class="rbtnrow">
-          <button class="rbtn rbtn-w" onclick="selVal(this,'reaction','ok')">✅ 正常无反应</button>
-          <button class="rbtn rbtn-w" onclick="selVal(this,'reaction','warn')">⚠️ 轻微异常</button>
-          <button class="rbtn rbtn-w" onclick="selVal(this,'reaction','alert')">❌ 有明显反应</button>
-        </div>
-      </div>
       <div>
         <div class="rlabel">备注（可选）</div>
         <textarea id="lf-note" placeholder="如：特别喜欢南瓜，牛肉条抓得很起劲…" style="margin-top:6px"></textarea>
@@ -337,14 +319,7 @@ textarea{resize:none;min-height:72px}
         <div class="fg" style="grid-column:1/-1"><label>食材内容</label>
           <input type="text" id="edit-foods" placeholder="如：猪肉泥、南瓜、米粉糊">
         </div>
-        <div class="fg"><label>进食情况</label>
-          <select id="edit-reaction">
-            <option value="ok">✅ 正常无反应</option>
-            <option value="warn">⚠️ 轻微异常</option>
-            <option value="alert">❌ 有明显反应</option>
-          </select>
-        </div>
-        <div class="fg"><label>备注</label>
+        <div class="fg" style="grid-column:1/-1"><label>备注</label>
           <input type="text" id="edit-note" placeholder="备注">
         </div>
       </div>
@@ -964,14 +939,14 @@ function saveLog() {
       if (!exists) D.fingerFoods.push({ name: name, note: '手动添加' });
     });
   }
-  var foods = allFoods.join('、') + (LS.amt ? '（' + LS.amt + '）' : '');
+  var foods = allFoods.join('、');
   D.logs.unshift({
     id: Date.now(),
     date: LS.date,
     who: LS.who,
     meal: LS.meal,
     foods: foods,
-    reaction: LS.reaction || 'ok',
+    reaction: 'ok',
     note: document.getElementById('lf-note').value.trim()
   });
   // 按日期倒序排列
@@ -980,7 +955,7 @@ function saveLog() {
   // ── 自动排敏检测 ──
   var newlyPassed = checkAutoAllergy(allFoods, LS.date, LS.reaction || 'ok');
   sched();
-  LS = { date: tday(), who: '', meal: '', foods: [], amt: '', reaction: '', customFoods: [] };
+  LS = { date: tday(), who: '', meal: '', foods: [], customFoods: [] };
   document.getElementById('lf-note').value = '';
   initLog();
   document.querySelectorAll('#sec-log .rbtn.on').forEach(function(b) { b.classList.remove('on'); });
@@ -1194,7 +1169,6 @@ function saveEditLog() {
   D.logs[idx].date = document.getElementById('edit-date').value;
   D.logs[idx].meal = document.getElementById('edit-meal').value;
   D.logs[idx].foods = document.getElementById('edit-foods').value.trim();
-  D.logs[idx].reaction = document.getElementById('edit-reaction').value;
   D.logs[idx].note = document.getElementById('edit-note').value.trim();
   D.logs.sort(function(a, b) { return b.date.localeCompare(a.date); });
   sched();
