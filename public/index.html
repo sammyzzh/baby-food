@@ -287,6 +287,7 @@ textarea{resize:none;min-height:72px}
         <div class="rbtnrow">
           <button class="rbtn rbtn-w" onclick="selMeal(this,'main')">🍽️ 上午正餐</button>
           <button class="rbtn rbtn-w" onclick="selMeal(this,'snack')">🍽️ 下午正餐</button>
+          <button class="rbtn rbtn-w" onclick="selMeal(this,'allday')">☀️ 全天（上午+下午）</button>
           <button class="rbtn rbtn-w" onclick="selMeal(this,'finger')">✋ 傍晚手指食物</button>
         </div>
       </div>
@@ -764,9 +765,7 @@ function renderFoodChips() {
   ];
 
   var groups = [];
-  if (LS.meal === 'main') {
-    groups = mainGroups;
-  } else if (LS.meal === 'snack') {
+  if (LS.meal === 'main' || LS.meal === 'snack' || LS.meal === 'allday') {
     groups = mainGroups;
   } else {
     var ff = D.fingerFoods.map(function(f) { return f.name; });
@@ -940,20 +939,18 @@ function saveLog() {
     });
   }
   var foods = allFoods.join('、');
-  D.logs.unshift({
-    id: Date.now(),
-    date: LS.date,
-    who: LS.who,
-    meal: LS.meal,
-    foods: foods,
-    reaction: 'ok',
-    note: document.getElementById('lf-note').value.trim()
-  });
+  var note = document.getElementById('lf-note').value.trim();
+  if (LS.meal === 'allday') {
+    D.logs.unshift({ id: Date.now(),     date: LS.date, who: LS.who, meal: 'main',  foods: foods, reaction: 'ok', note: note });
+    D.logs.unshift({ id: Date.now() + 1, date: LS.date, who: LS.who, meal: 'snack', foods: foods, reaction: 'ok', note: note });
+  } else {
+    D.logs.unshift({ id: Date.now(), date: LS.date, who: LS.who, meal: LS.meal, foods: foods, reaction: 'ok', note: note });
+  }
   // 按日期倒序排列
   D.logs.sort(function(a, b) { return b.date.localeCompare(a.date); });
 
   // ── 自动排敏检测 ──
-  var newlyPassed = checkAutoAllergy(allFoods, LS.date, LS.reaction || 'ok');
+  var newlyPassed = checkAutoAllergy(allFoods, LS.date, 'ok');
   sched();
   LS = { date: tday(), who: '', meal: '', foods: [], customFoods: [] };
   document.getElementById('lf-note').value = '';
